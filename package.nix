@@ -126,9 +126,12 @@ stdenv.mkDerivation {
         # Substitute @out@ placeholder
         substituteInPlace $out/bin/claude --replace-quiet "@out@" "$out"
 
-        # Wrap with runtime dependencies and disable auto-updater
+        # Wrap with runtime dependencies, disable auto-updater, and skip installation checks
+        # DISABLE_INSTALLATION_CHECKS prevents false "installMethod is native, but claude
+        # command not found at ~/.local/bin/claude" errors since Nix manages the binary path
         wrapProgram $out/bin/claude \
           --set DISABLE_AUTOUPDATER 1 \
+          --set DISABLE_INSTALLATION_CHECKS 1 \
           --prefix PATH : ${
             lib.makeBinPath (
               [

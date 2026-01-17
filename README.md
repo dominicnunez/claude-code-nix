@@ -165,6 +165,7 @@ export CLAUDE_CODE_NIX_VERBOSE=1
 |----------|-------------|---------|
 | `CLAUDE_CODE_NIX_VERBOSE` | Set to `1` to enable wrapper messages | unset |
 | `DISABLE_AUTOUPDATER` | Set automatically to `1` to disable Claude's auto-updater | `1` |
+| `DISABLE_INSTALLATION_CHECKS` | Set automatically to `1` to skip native binary path validation | `1` |
 
 ## Contributing
 
