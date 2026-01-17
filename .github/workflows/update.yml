@@ -1,0 +1,89 @@
+# Automated Update Workflow
+#
+# Claude Code releases frequently, so we check hourly.
+# Adjust the cron schedule based on your needs.
+
+name: Update Claude Code
+
+on:
+  schedule:
+    - cron: '0 * * * *'  # Hourly
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  check-update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Check for updates
+        id: check
+        run: |
+          output=$(nix develop --command ./update.sh 2>&1) || true
+          echo "$output"
+
+          if echo "$output" | grep -q "UPDATE_NEEDED=true"; then
+            echo "update_needed=true" >> $GITHUB_OUTPUT
+            new_version=$(echo "$output" | grep "NEW_VERSION=" | cut -d= -f2)
+            echo "new_version=$new_version" >> $GITHUB_OUTPUT
+          else
+            echo "update_needed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Update version.json
+        if: steps.check.outputs.update_needed == 'true'
+        run: |
+          nix develop --command ./update.sh --update
+
+      - name: Validate flake
+        if: steps.check.outputs.update_needed == 'true'
+        run: |
+          nix flake check
+
+      - name: Create Pull Request
+        if: steps.check.outputs.update_needed == 'true'
+        run: |
+          new_version="${{ steps.check.outputs.new_version }}"
+          branch="update-claude-code-${new_version}"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git checkout -b "$branch"
+          git add version.json
+          git commit -m "chore: update claude-code to ${new_version}"
+          git push -u origin "$branch"
+
+          gh pr create \
+            --title "chore: update claude-code to ${new_version}" \
+            --body "Automated update to Claude Code version ${new_version}." \
+            --base main \
+            --head "$branch"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Merge Pull Request
+        if: steps.check.outputs.update_needed == 'true'
+        run: |
+          new_version="${{ steps.check.outputs.new_version }}"
+          gh pr merge "update-claude-code-${new_version}" --squash --delete-branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Summary
+        run: |
+          if [[ "${{ steps.check.outputs.update_needed }}" == "true" ]]; then
+            echo "## Update Available" >> $GITHUB_STEP_SUMMARY
+            echo "Created PR to update to version ${{ steps.check.outputs.new_version }}" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## No Update Needed" >> $GITHUB_STEP_SUMMARY
+            echo "Already on the latest version" >> $GITHUB_STEP_SUMMARY
+          fi
