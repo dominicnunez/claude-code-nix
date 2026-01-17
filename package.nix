@@ -101,6 +101,10 @@ stdenv.mkDerivation {
   # Source is a single binary file, not an archive
   dontUnpack = true;
 
+  # The Claude Code binary is a self-contained Bun executable
+  # Stripping it corrupts the embedded JavaScript bundle
+  dontStrip = true;
+
   nativeBuildInputs = [
     makeWrapper
   ];
