@@ -18,7 +18,7 @@ nix run github:dominicnunez/claude-code-nix
 
 **Install to your profile:**
 ```bash
-nix profile install github:dominicnunez/claude-code-nix
+nix profile add github:dominicnunez/claude-code-nix
 ```
 
 ## Cachix Setup
