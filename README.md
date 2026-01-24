@@ -5,7 +5,7 @@ Nix flake for [Claude Code](https://claude.ai/code) - Anthropic's agentic coding
 **Features:**
 - Direct binary packaging from Anthropic's official distribution
 - Smart Home Manager detection with automatic symlink management
-- Pre-built binaries via Cachix for instant installation
+- Pre-built binaries via Garnix for instant installation
 - Automated updates for new Claude Code versions
 - Linux and macOS support (x86_64 and aarch64)
 
@@ -21,43 +21,11 @@ nix run github:dominicnunez/claude-code-nix
 nix profile add github:dominicnunez/claude-code-nix
 ```
 
-## Cachix Setup
+## Binary Cache
 
-Use the public binary cache to skip building from source.
+This flake uses [Garnix](https://garnix.io) for CI and binary caching. The `nixConfig` in `flake.nix` automatically configures the cache, so pre-built binaries are fetched without any manual setup.
 
-### Option 1: NixOS Configuration
-
-```nix
-{ config, pkgs, ... }:
-{
-  nix.settings = {
-    substituters = [ "https://claude-code-nix.cachix.org" ];
-    trusted-public-keys = [ "claude-code-nix.cachix.org-1:VzA1HW3CkJnuSQaPE1t7OfSaleacUnO19VrZ3hJFH+0=" ];
-  };
-}
-```
-
-### Option 2: nix.conf
-
-Add to `~/.config/nix/nix.conf`:
-```
-extra-substituters = https://claude-code-nix.cachix.org
-extra-trusted-public-keys = claude-code-nix.cachix.org-1:VzA1HW3CkJnuSQaPE1t7OfSaleacUnO19VrZ3hJFH+0=
-```
-
-### Option 3: Flake nixConfig
-
-```nix
-{
-  nixConfig = {
-    extra-substituters = [ "https://claude-code-nix.cachix.org" ];
-    extra-trusted-public-keys = [ "claude-code-nix.cachix.org-1:VzA1HW3CkJnuSQaPE1t7OfSaleacUnO19VrZ3hJFH+0=" ];
-  };
-
-  inputs.claude-code-nix.url = "github:dominicnunez/claude-code-nix";
-  # ...
-}
-```
+If prompted to allow configuration from the flake, answer yes or add `accept-flake-config = true` to your Nix configuration.
 
 ## Installation Methods
 
@@ -171,12 +139,11 @@ export CLAUDE_CODE_NIX_VERBOSE=1
 
 ### How Updates Work
 
-1. **Automated Check**: GitHub Actions checks for new Claude Code versions
+1. **Automated Check**: GitHub Actions checks for new Claude Code versions hourly
 2. **Version Detection**: Script queries the GCS manifest for latest version
 3. **Hash Fetching**: If newer version found, fetches SHA256 hashes from manifest
 4. **Validation**: Runs `nix flake check` to verify package builds correctly
-5. **PR Creation**: Creates PR with updated `version.json`
-6. **Merge**: PR is automatically squash-merged
+5. **Push**: Pushes update directly to main
 
 ### Manual Update
 
@@ -214,10 +181,10 @@ nix flake check
 ├── version.json        # Current version and platform hashes
 ├── update.sh           # Update script for GCS manifest
 ├── README.md           # This file
+├── garnix.yaml         # Garnix CI configuration
 └── .github/workflows/
-    ├── update.yml      # Automated update check workflow
-    ├── ci.yml          # PR build validation workflow
-    └── cachix.yml      # Binary cache push workflow
+    ├── update.yml      # Automated update workflow
+    └── ci.yml          # Garnix build validation
 ```
 
 ## License
