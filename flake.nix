@@ -49,7 +49,7 @@
           buildInputs = with pkgs; [
             nixpkgs-fmt
             nix-prefetch
-            cachix
+            gh
             jq
           ];
         };
